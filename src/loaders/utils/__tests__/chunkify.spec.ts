@@ -1,6 +1,7 @@
+import glogg from 'glogg';
 import chunkify from '../chunkify';
 import * as Rsg from '../../../typings';
-
+import configSchema from '../../../scripts/schemas/config';
 /* eslint-disable max-len */
 
 it('should separate Markdown and component examples', () => {
@@ -160,6 +161,20 @@ it('should call updateExample function for example', () => {
 	};
 	const actual = chunkify(markdown, updateExample);
 	expect(actual).toEqual(expected);
+});
+
+it('should change language for deprecated code block languages', () => {
+	const logger = glogg('rsg');
+	const warnSpy = jest.spyOn(logger, 'warn');
+
+	const props: Omit<Rsg.CodeExample, 'type'> = {
+		content: '<h1>Hello Markdown!<h1>',
+		lang: 'example',
+	};
+
+	const updatedExample = configSchema.updateExample.default(props);
+
+	expect(warnSpy).toHaveBeenCalled();
 });
 
 it('should even parse examples with custom extensions', () => {
