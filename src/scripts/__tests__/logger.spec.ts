@@ -37,3 +37,17 @@ test('should accept default loggers', () => {
 	logger.info(message);
 	expect(info).toBeCalledWith(message);
 });
+
+test('default loggers are printed in correct stream', () => {
+	let consSpy = jest.spyOn(console, 'log');
+	setupLogger({}, true);
+	logger.info('Info message');
+
+	logger.debug('Debug message');
+	expect(consSpy).toHaveBeenCalledTimes(2);
+
+	consSpy = jest.spyOn(console, 'warn');
+
+	logger.warn('Warning message');
+	expect(consSpy).toHaveBeenCalled();
+});

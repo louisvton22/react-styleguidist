@@ -94,7 +94,13 @@ test('createServer should allow overriding default devServer options', () => {
 				},
 			},
 		},
+		configureServer() {
+			// Your logic here
+			// This function should return a string based on the webpackServer and environment
+			return `Server configured for ${'environment'}`;
+		},
 	};
+	const spy = jest.spyOn(config, 'configureServer');
 	const result = createServer(config, 'development');
 	expect(result).toBeTruthy();
 	expect(result.compiler).toBeTruthy();
@@ -104,4 +110,6 @@ test('createServer should allow overriding default devServer options', () => {
 			progress: true,
 		},
 	});
+
+	expect(spy).toHaveBeenCalled();
 });
