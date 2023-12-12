@@ -19,9 +19,7 @@ const REQUIRE_IN_RUNTIME_PATH = absolutize('utils/client/requireInRuntime');
 const EVAL_IN_CONTEXT_PATH = absolutize('utils/client/evalInContext');
 
 export default function examplesLoader(this: Rsg.StyleguidistLoaderContext, source: string) {
-	function newFunction(
-		this: (props: Omit<Rsg.CodeExample, 'type'>) => Omit<Rsg.CodeExample, 'type'>
-	) {
+	function newFunction(this: Rsg.StyleguidistLoaderContext) {
 		const config = this._styleguidist;
 		const { file, displayName, shouldShowDefaultExample, customLangs } = this.getOptions();
 
@@ -44,7 +42,7 @@ export default function examplesLoader(this: Rsg.StyleguidistLoaderContext, sour
 		const allCodeExamples = filter(examples, { type: 'code' });
 		const requiresFromExamples = allCodeExamples.reduce((requires: string[], example) => {
 			return requires.concat(getImports(example.content));
-		}, []);	}
+		}, []);
 		// Auto imported modules.
 		// We don't need to do anything here to support explicit imports: they will
 		// work because both imports (generated below and by rewrite-imports) will
