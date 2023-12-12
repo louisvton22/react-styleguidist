@@ -19,45 +19,51 @@ const REQUIRE_IN_RUNTIME_PATH = absolutize('utils/client/requireInRuntime');
 const EVAL_IN_CONTEXT_PATH = absolutize('utils/client/evalInContext');
 
 export default function examplesLoader(this: Rsg.StyleguidistLoaderContext, source: string) {
-	const config = this._styleguidist;
-	const { file, displayName, shouldShowDefaultExample, customLangs } = this.getOptions();
+	function newFunction(
+		this: (props: Omit<Rsg.CodeExample, 'type'>) => Omit<Rsg.CodeExample, 'type'>
+	) {
+		const config = this._styleguidist;
+		const { file, displayName, shouldShowDefaultExample, customLangs } = this.getOptions();
 
-	// Replace placeholders (__COMPONENT__) with the passed-in component name
-	if (shouldShowDefaultExample) {
-		source = expandDefaultComponent(source, displayName);
+		// Replace placeholders (__COMPONENT__) with the passed-in component name
+		if (shouldShowDefaultExample) {
+			source = expandDefaultComponent(source, displayName);
+		}
+
+		const updateExample = config.updateExample
+			? (props: Omit<Rsg.CodeExample, 'type'>) => config.updateExample(props, this.resourcePath)
+			: undefined;
+
+		// Load examples
+		const examples = chunkify(source, updateExample, customLangs);
+
+		// Find all import statements and require() calls in examples to make them
+		// available in webpack context at runtime.
+		// Note 9that we can't just use require() directly at runtime,
+		// because webpack changes its name to something like __webpack__require__().
+		const allCodeExamples = filter(examples, { type: 'code' });
+		const requiresFromExamples = allCodeExamples.reduce((requires: string[], example) => {
+			return requires.concat(getImports(example.content));
+		}, []);	}
+		// Auto imported modules.
+		// We don't need to do anything here to support explicit imports: they will
+		// work because both imports (generated below and by rewrite-imports) will
+		// be eventually transpiled to `var x = require('x')`, so we'll just have two
+		// of them in the same scope, which is fine in non-strict mode
+		const fullContext = {
+			// Modules, provied by the user
+			...config.context,
+			// Append React, because it’s required for JSX
+			React: 'react',
+			// Append the current component module to make it accessible in examples
+			// without an explicit import
+			// TODO: Do not leak absolute path
+			...(displayName ? { [displayName]: file } : {}),
+		};
+		return { requiresFromExamples, fullContext, examples };
 	}
 
-	const updateExample = config.updateExample
-		? (props: Omit<Rsg.CodeExample, 'type'>) => config.updateExample(props, this.resourcePath)
-		: undefined;
-
-	// Load examples
-	const examples = chunkify(source, updateExample, customLangs);
-
-	// Find all import statements and require() calls in examples to make them
-	// available in webpack context at runtime.
-	// Note that we can't just use require() directly at runtime,
-	// because webpack changes its name to something like __webpack__require__().
-	const allCodeExamples = filter(examples, { type: 'code' });
-	const requiresFromExamples = allCodeExamples.reduce((requires: string[], example) => {
-		return requires.concat(getImports(example.content));
-	}, []);
-
-	// Auto imported modules.
-	// We don't need to do anything here to support explicit imports: they will
-	// work because both imports (generated below and by rewrite-imports) will
-	// be eventually transpiled to `var x = require('x')`, so we'll just have two
-	// of them in the same scope, which is fine in non-strict mode
-	const fullContext = {
-		// Modules, provied by the user
-		...config.context,
-		// Append React, because it’s required for JSX
-		React: 'react',
-		// Append the current component module to make it accessible in examples
-		// without an explicit import
-		// TODO: Do not leak absolute path
-		...(displayName ? { [displayName]: file } : {}),
-	};
+	const { requiresFromExamples, fullContext, examples } = newFunction.call(this);
 
 	// All required or imported modules, either explicitly in examples code
 	// or implicitly (React, current component and context config option)
