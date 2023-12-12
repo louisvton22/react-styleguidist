@@ -35,9 +35,9 @@ const CLIENT_CONFIG_OPTIONS = [
 const STYLE_VARIABLE_NAME = '__rsgStyles';
 const THEME_VARIABLE_NAME = '__rsgTheme';
 
-export default function() {}
-export function pitch(this: Rsg.StyleguidistLoaderContext) {
-	// Clear cache so it would detect new or renamed files
+export default function () {}
+
+function setUpPitch(this: Rsg.StyleguidistLoaderContext) {
 	fileExistsCaseInsensitive.clearCache();
 
 	// Reset slugger for each code reload to be deterministic
@@ -62,6 +62,12 @@ export function pitch(this: Rsg.StyleguidistLoaderContext) {
 	const patterns = welcomeScreen ? getComponentPatternsFromSections(config.sections) : undefined;
 
 	logger.debug('Loading components:\n' + allComponentFiles.join('\n'));
+	return { config, allComponentFiles, welcomeScreen, patterns, sections };
+}
+
+export function pitch(this: Rsg.StyleguidistLoaderContext) {
+	// Clear cache so it would detect new or renamed files
+	const { config, allComponentFiles, welcomeScreen, patterns, sections } = setUpPitch.call(this);
 
 	// Setup Webpack context dependencies to enable hot reload when adding new files
 	if (config.contextDependencies) {
